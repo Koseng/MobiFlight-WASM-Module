@@ -495,7 +495,13 @@ void CALLBACK MyDispatchProc(SIMCONNECT_RECV* pData, DWORD cbData, void* pContex
 				ListLVars(client);
 				SendResponse("MF.LVars.List.End", client);
 				break;
-
+			}
+			else if (str == "MF.Version.Get")
+			{
+				std::string v = "MF.Version." + std::string(version);
+				SendResponse(v.c_str(), client);
+				fprintf(stderr, "MobiFlight[%s]: Received get version\n", client->Name.c_str());
+				break;
 			}
 			// MF.SimVars.Set(5 (>L:MyVar))
 			else if (str.find("MF.SimVars.Set.") != std::string::npos) {
