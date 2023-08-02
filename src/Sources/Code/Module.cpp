@@ -36,13 +36,14 @@ uint16_t ClientDataDefinitionIdSimVarsRange = 10000;
 
 // Maximum number of variables that are read from sim per frame, Default: 30
 // Can be set to different value via config command
-uint16_t MOBIFLIGHT_MAX_VARS_PER_FRAME = 30;
+uint16_t MOBIFLIGHT_MAX_VARS_PER_FRAME = 300;
 
 // data struct for dynamically registered SimVars
 struct SimVar {
 	int ID;
 	int Offset;
 	std::string Name;
+	std::string Precompile;
 	float Value;
 };
 
@@ -251,6 +252,12 @@ void RegisterSimVar(const std::string code, Client* client) {
 	var1.ID = SimVars->size() + client->DataDefinitionIdSimVarsStart;
 	var1.Offset = (SimVars->size()) * sizeof(float);
 
+	PCSTRINGZ compiled;
+	UINT32 mySize;
+	BOOL res = gauge_calculator_code_precompile(&compiled, &mySize, var1.Name.c_str());
+	std::cout << "MobiFlight: Precompile Return= " << res << std::endl;
+	var1.Precompile = std::string(compiled, mySize);
+
 	SimVars->push_back(var1);
 	HRESULT hr;
 
@@ -273,7 +280,7 @@ void RegisterSimVar(const std::string code, Client* client) {
 	FLOAT64 val;
 	WriteSimVar(var1, client);
 
-	execute_calculator_code(std::string(code).c_str(), &val, NULL, NULL);
+	execute_calculator_code(std::string(var1.Precompile).c_str(), &val, NULL, NULL);
 	var1.Value = val;
 	
 	WriteSimVar(var1, client);
@@ -295,7 +302,7 @@ void ClearSimVars(Client* client) {
 // Read a single SimVar and send the current value to SimConnect Clients
 void ReadSimVar(SimVar &simVar, Client* client) {
 	FLOAT64 val = 0;
-	execute_calculator_code(std::string(simVar.Name).c_str(), &val, NULL, NULL);
+	execute_calculator_code(std::string(simVar.Precompile).c_str(), &val, NULL, NULL);
 	
 	if (simVar.Value == val) return;
 	simVar.Value = val;
